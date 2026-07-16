@@ -1,0 +1,6 @@
+{
+  "name": "Futures Propfirm Management System",
+  "description": "A comprehensive split-panel management dashboard for Futures Propfirms, featuring real-time risk parameter checking, simulated trading for NQ/ES, interactive accounts, payout tracking, and copyable Supabase PostgreSQL SQL migrations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
