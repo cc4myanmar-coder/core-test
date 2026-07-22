@@ -77,7 +77,8 @@ export default function PayoutsPanel({
     onAddPayout({
       account_id: selectedAccountId,
       amount: Number(payoutAmount),
-      payout_date: new Date().toISOString().split('T')[0]
+      payout_date: new Date().toISOString().split('T')[0],
+      status: 'Completed'
     });
 
     // Subtract payout from account balance

@@ -29,6 +29,7 @@ export interface TranslationDict {
   navAccounts: string;
   navPayouts: string;
   navSqlSandbox: string;
+  navAdminDashboard: string;
   dashboardTitle: string;
   dashboardSub: string;
   launchSimDesk: string;
@@ -101,6 +102,7 @@ export const translations: Record<Language, TranslationDict> = {
     navAccounts: "Manage Accounts",
     navPayouts: "Disburse Payouts",
     navSqlSandbox: "SQL Database Sandbox",
+    navAdminDashboard: "Admin Control Panel",
     dashboardTitle: "CORE Mentorship Program",
     dashboardSub: "Real-time evaluation analytics and simulated risk dashboard",
     launchSimDesk: "Launch Sim Desk",
@@ -171,6 +173,7 @@ export const translations: Record<Language, TranslationDict> = {
     navAccounts: "အကောင့်များ စီမံရန်",
     navPayouts: "ထုတ်ယူငွေများ စီမံရန်",
     navSqlSandbox: "SQL Database ထိန်းချုပ်ခန်း",
+    navAdminDashboard: "အုပ်ချုပ်သူ ထိန်းချုပ်ခန်း",
     dashboardTitle: "CORE Mentorship သင်တန်းအစီအစဉ်",
     dashboardSub: "တိုက်ရိုက်စစ်ဆေးမှု စာရင်းဇယားများနှင့် ဘေးအန္တရာယ်စီမံခန့်ခွဲမှုစနစ်",
     launchSimDesk: "အရောင်းအဝယ် စမ်းသပ်ခန်းသို့ သွားပါ",
@@ -241,6 +244,7 @@ export const translations: Record<Language, TranslationDict> = {
     navAccounts: "จัดการบัญชี",
     navPayouts: "จัดการการเบิกเงิน",
     navSqlSandbox: "แซนด์บอกซ์ฐานข้อมูล SQL",
+    navAdminDashboard: "แผงควบคุมผู้ดูแลระบบ",
     dashboardTitle: "โปรแกรมการให้คำปรึกษา CORE",
     dashboardSub: "แดชบอร์ดสถิติและการประเมินความเสี่ยงจำลองตามเวลาจริง",
     launchSimDesk: "เปิดโต๊ะซื้อขายจำลอง",

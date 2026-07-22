@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Database, LayoutDashboard, Briefcase, 
-  Users, TrendingUp, Coins, User, LogOut, Globe, Sun, Moon
+  Users, TrendingUp, Coins, User, LogOut, Globe, Sun, Moon, Shield
 } from 'lucide-react';
 import { Profile } from '../types';
 import { Language, translations } from '../lib/translations';
@@ -44,6 +44,7 @@ export default function Sidebar({
 
   const menuItems = [
     { id: 'overview', name: t.navOverview, icon: LayoutDashboard },
+    ...(currentRole === 'admin' ? [{ id: 'admin-dashboard', name: t.navAdminDashboard, icon: Shield, accent: true }] : []),
     { id: 'sql', name: t.navSqlSandbox, icon: Database, accent: true },
     { id: 'firms', name: t.navPropFirms, icon: Briefcase },
     { id: 'accounts', name: t.navAccounts, icon: Users },

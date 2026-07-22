@@ -205,6 +205,7 @@ export const mockPayouts: Payout[] = [
     id: 'payout-1',
     account_id: 'acc-2', // APEX-50K-1224
     amount: 1500,
-    payout_date: '2026-07-14'
+    payout_date: '2026-07-14',
+    status: 'Completed'
   }
 ];

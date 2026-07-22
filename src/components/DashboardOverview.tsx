@@ -1,23 +1,28 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { 
   TrendingUp, Users, Award, ShieldAlert, 
   ArrowUpRight, ArrowDownRight, 
-  Flame, Receipt
+  Flame, Receipt, Bot, FileSpreadsheet, Lock, Sparkles, Trophy, CheckCircle2, RefreshCw
 } from 'lucide-react';
-import { StudentAccount, TradeLog, Payout, PropFirmRule, ColorTheme } from '../types';
+import { StudentAccount, TradeLog, Payout, PropFirmRule, ColorTheme, PropFirm } from '../types';
 import { Language, translations } from '../lib/translations';
 import ScrollReveal from './ScrollReveal';
+import CsvTradeLogUploader from './CsvTradeLogUploader';
+import AiAnalysisModal from './AiAnalysisModal';
 
 interface DashboardOverviewProps {
   accounts: StudentAccount[];
   trades: TradeLog[];
   payouts: Payout[];
   rules: PropFirmRule[];
+  firms?: PropFirm[];
   currentRole: 'admin' | 'student';
   onNavigateToTrades: () => void;
   onNavigateToAccounts: () => void;
   onNavigateToPayouts: () => void;
+  onNavigateToGallery?: () => void;
+  onTradesUploaded?: (trades: TradeLog[]) => void;
   t: any;
   language: Language;
   theme: ColorTheme;
@@ -28,19 +33,27 @@ export default function DashboardOverview({
   trades,
   payouts,
   rules,
+  firms = [],
   currentRole,
   onNavigateToTrades,
   onNavigateToAccounts,
   onNavigateToPayouts,
+  onNavigateToGallery,
+  onTradesUploaded,
   t,
   language,
   theme
 }: DashboardOverviewProps) {
+  const isMm = language === 'mm';
+  const [showCsvUploader, setShowCsvUploader] = useState(false);
+  const [selectedAiAccount, setSelectedAiAccount] = useState<StudentAccount | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
   // Calculate high level stats
   const totalEvaluated = accounts.length;
-  const activeAccounts = accounts.filter(a => a.status === 'Active');
+  const challengeAccounts = accounts.filter(a => a.status === 'Challenge' || a.status === 'Active');
   const passedAccounts = accounts.filter(a => a.status === 'Passed');
+  const fundedAccounts = accounts.filter(a => a.status === 'Funded' || a.status === 'Payout_Active');
   const failedAccounts = accounts.filter(a => a.status.startsWith('Failed_at'));
   
   const passRate = totalEvaluated > 0 
@@ -57,10 +70,19 @@ export default function DashboardOverview({
     ? Math.round((profitableTradesCount / totalTradesCount) * 100) 
     : 0;
 
+  // Filter accounts list for detailed view
+  const filteredAccountsList = useMemo(() => {
+    if (statusFilter === 'ALL') return accounts;
+    if (statusFilter === 'CHALLENGE') return accounts.filter(a => a.status === 'Challenge' || a.status === 'Active');
+    if (statusFilter === 'PASSED') return accounts.filter(a => a.status === 'Passed');
+    if (statusFilter === 'FUNDED') return accounts.filter(a => a.status === 'Funded' || a.status === 'Payout_Active');
+    if (statusFilter === 'FAILED') return accounts.filter(a => a.status.startsWith('Failed_at'));
+    return accounts;
+  }, [accounts, statusFilter]);
+
   // Prepare data for Equity Curve
   const equityCurveData = useMemo(() => {
     let sum = 0;
-    // Sort trades by date
     const sortedTrades = [...trades].sort((a, b) => new Date(a.trade_time).getTime() - new Date(b.trade_time).getTime());
     return [
       { name: 'Start', pnl: 0, balance: 0 },
@@ -76,88 +98,94 @@ export default function DashboardOverview({
     ];
   }, [trades]);
 
-  // Compute status distribution for bar chart using active theme hex colors
+  // Status distribution bar chart
   const statusData = useMemo(() => {
     const counts: Record<string, number> = {
-      'Active': 0,
-      'Passed': 0,
-      'Failed': 0
+      'Challenge': challengeAccounts.length,
+      'Passed': passedAccounts.length,
+      'Funded': fundedAccounts.length,
+      'Failed': failedAccounts.length
     };
-    accounts.forEach(acc => {
-      if (acc.status === 'Active') counts['Active']++;
-      else if (acc.status === 'Passed') counts['Passed']++;
-      else counts['Failed']++;
-    });
 
     return [
-      { name: language === 'mm' ? 'အသုံးပြုဆဲ' : language === 'th' ? 'กำลังใช้งาน' : 'Active', count: counts['Active'], color: '#0ea5e9' },
-      { name: language === 'mm' ? 'အောင်မြင်ပြီး' : language === 'th' ? 'ผ่าน' : 'Passed', count: counts['Passed'], color: theme.bullColor },
-      { name: language === 'mm' ? 'မအောင်မြင်ပါ' : language === 'th' ? 'ไม่ผ่าน' : 'Failed', count: counts['Failed'], color: theme.bearColor }
+      { name: isMm ? 'Challenge' : 'Challenge', count: counts['Challenge'], color: '#38bdf8' },
+      { name: isMm ? 'Passed' : 'Passed', count: counts['Passed'], color: '#f59e0b' },
+      { name: isMm ? 'Funded' : 'Funded', count: counts['Funded'], color: theme.bullColor },
+      { name: isMm ? 'Failed' : 'Failed', count: counts['Failed'], color: theme.bearColor }
     ];
-  }, [accounts, language, theme]);
+  }, [challengeAccounts, passedAccounts, fundedAccounts, failedAccounts, isMm, theme]);
 
   // Find rules mapping
   const rulesMap = useMemo(() => {
     return new Map(rules.map(r => [r.id, r]));
   }, [rules]);
 
-  // Extra translated pieces
-  const labelWelcome = language === 'mm' 
-    ? `မင်္ဂလာပါ CORE Mentorship မှ ကြိုဆိုပါတယ်၊ ${currentRole === 'admin' ? 'ကြီးကြပ်သူ Admin' : 'သင်တန်းသား Student'}`
-    : language === 'th'
-      ? `ยินดีต้อนรับกลับสู่ CORE Mentorship, ${currentRole === 'admin' ? 'ผู้ดูแล Admin' : 'นักเรียน Student'}`
-      : `Welcome back to CORE Mentorship, ${currentRole === 'admin' ? 'Admin User' : 'Student Trader'}`;
-
-  const labelWelcomeSub = language === 'mm'
-    ? "CORE Mentorship evaluation platform ဖြစ်သည်။ သင်၏ အရောင်းအဝယ်များကို စစ်ဆေးခြင်း၊ drawdowns စောင့်ကြည့်ခြင်း၊ metrics များနှင့် ငွေထုတ်ယူမှုများကို ဤနေရာတွင် စီမံခန့်ခွဲနိုင်ပါသည်။"
-    : language === 'th'
-      ? "ยินดีต้อนรับสู่แพลตฟอร์มการประเมินของ CORE Mentorship คุณสามารถตรวจสอบสถานะบัญชี ติดตาม drawdown และจัดการการเบิกเงินได้ที่นี่"
-      : "Manage challenges, monitor real-time trailing drawdown violations, track compliance metrics, and distribute payouts within CORE Mentorship.";
-
-  const winRateLabel = language === 'mm' ? 'အရောင်းအဝယ် နိုင်နှုန်း (Win Rate)' : language === 'th' ? 'อัตราการชนะ (Win Rate)' : 'Win Rate';
-  const passRateLabel = language === 'mm' ? 'အောင်မြင်မှုနှုန်း (Pass Rate)' : language === 'th' ? 'อัตราการผ่าน (Pass Rate)' : 'Pass Rate';
-  const totalPayoutsLabel = language === 'mm' ? 'စုစုပေါင်း ထုတ်ယူငွေ (Total Payouts)' : language === 'th' ? 'การเบิกเงินทั้งหมด (Total Payouts)' : 'Total Payouts';
-
-  const labelFunnel = language === 'mm' ? 'အကောင့်များ၏ အခြေအနေ (Account Health)' : language === 'th' ? 'สถานะบัญชีและรายงาน' : 'Account Funnel & Health';
-  const labelFunnelSub = language === 'mm' ? 'အောင်မြင်၊ ရှုံးနိမ့် နှင့် စစ်ဆေးဆဲ စာရင်းဇယား' : language === 'th' ? 'รายงานจำนวนบัญชีผ่านการประเมิน' : 'Current active vs failed and certificate status.';
-
-  const labelViolations = language === 'mm' ? 'စည်းမျဉ်း ချိုးဖောက်မှုနှင့် သတိပေးချက်များ' : language === 'th' ? 'การแจ้งเตือนกฎและข้อกำหนด' : 'Real-Time Risk Violations & Warnings';
-  const labelViolationsSub = language === 'mm' ? 'စောင့်ကြည့်ရေး စနစ်မှ ထုတ်ပြန်သော သတိပေးချက်များ' : language === 'th' ? 'ระบบตรวจพบการทำผิดกฎจำลองตามเวลาจริง' : 'Simulated live RLS system monitoring status.';
+  // Find firms mapping
+  const firmsMap = useMemo(() => {
+    return new Map(firms.map(f => [f.id, f.name]));
+  }, [firms]);
 
   return (
     <div className="space-y-6" id="dashboard-overview">
       {/* Welcome Banner */}
       <ScrollReveal>
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-bull-alpha rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-10 w-40 h-40 bg-bear-alpha rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
           
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-1 text-xs font-bold bg-bull-alpha text-bull rounded-full border border-bull-alpha capitalize">
-                  {language === 'en' ? 'Workspace Role' : language === 'th' ? 'บทบาท' : 'အသုံးပြုသူအမျိုးအစား'}: {currentRole === 'admin' ? t.headRisk : t.traderStudent}
+                <span className="px-2.5 py-1 text-xs font-bold bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 capitalize">
+                  {currentRole === 'admin' ? (isMm ? 'အုပ်ချုပ်သူ Admin' : 'Admin Controller') : (isMm ? 'ကျောင်းသား Student' : 'Student Trader')}
                 </span>
-                <span className="w-1.5 h-1.5 bg-bull rounded-full animate-ping" />
-                <span className="text-slate-400 text-xs">Simulated Database Connection Active</span>
+                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
+                <span className="text-slate-400 text-xs font-mono">Futures Prop Firm System Active</span>
               </div>
-              <h1 className="text-xl font-bold tracking-tight text-white font-sans">
-                {labelWelcome}
+              <h1 className="text-xl font-bold tracking-tight text-white font-sans flex items-center gap-2">
+                CORE Mentorship Program
               </h1>
               <p className="text-slate-400 text-sm max-w-2xl leading-relaxed">
-                {labelWelcomeSub}
+                {isMm 
+                  ? 'Futures Prop Firm အကောင့်များ၏ Challenge, Funded, Payout နှင့် Fail မှတ်တမ်းများကို တိကျစွာ Track လိုက်ပေးသော စနစ်ဖြစ်ပါသည်။'
+                  : 'Comprehensive management dashboard for Futures Prop Firm accounts (NQ/MNQ/ES/MES). Track Challenge, Passed, Funded, and Payout lifecycles with AI trader analysis.'}
               </p>
             </div>
-            <button
-              onClick={onNavigateToTrades}
-              className="px-5 py-2.5 bg-bull hover:opacity-95 text-slate-950 rounded-lg text-sm font-black transition-all hover:scale-[1.02] flex items-center gap-2 active:scale-95 shadow-lg shadow-cyan-500/15 cursor-pointer"
-            >
-              <TrendingUp size={16} strokeWidth={2.5} />
-              <span>{t.launchSimDesk}</span>
-            </button>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => setShowCsvUploader(!showCsvUploader)}
+                className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-lg"
+              >
+                <FileSpreadsheet size={16} />
+                <span>{isMm ? 'CSV Trade Logs တင်ရန်' : 'Import CSV Logs'}</span>
+              </button>
+
+              <button
+                onClick={onNavigateToTrades}
+                className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-95 text-slate-950 rounded-xl text-xs font-black transition-all hover:scale-[1.02] flex items-center gap-2 active:scale-95 shadow-lg shadow-emerald-500/20 cursor-pointer"
+              >
+                <TrendingUp size={16} strokeWidth={2.5} />
+                <span>{t.launchSimDesk}</span>
+              </button>
+            </div>
           </div>
         </div>
       </ScrollReveal>
+
+      {/* CSV Trade Log Uploader Modal/Drawer */}
+      {showCsvUploader && (
+        <ScrollReveal>
+          <CsvTradeLogUploader
+            accountId={accounts[0]?.id || 'acc-1'}
+            accountNumber={accounts[0]?.account_number || 'CORE-1001'}
+            commissionPerContract={rules[0]?.commission_per_contract || 1.5}
+            language={language}
+            onTradesUploaded={(uploaded) => {
+              if (onTradesUploaded) onTradesUploaded(uploaded);
+            }}
+          />
+        </ScrollReveal>
+      )}
 
       {/* KPI Stats Grid */}
       <ScrollReveal delay={0.1}>
@@ -166,15 +194,15 @@ export default function DashboardOverview({
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 relative overflow-hidden">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t.totalAccounts}</span>
-              <div className="p-2 rounded-lg bg-bull-alpha text-bull border border-bull-alpha">
+              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 <Users size={16} />
               </div>
             </div>
             <div className="space-y-1">
               <div className="text-2xl font-bold font-mono text-white">{totalEvaluated}</div>
               <p className="text-xs text-slate-400 flex items-center gap-1">
-                <span className="text-bull font-bold">{activeAccounts.length} {t.activeEvaluations}</span>
-                <span>{language === 'mm' ? 'အကောင့်ရှိပါသည်' : language === 'th' ? 'บัญชี' : 'accounts'}</span>
+                <span className="text-emerald-400 font-bold">{challengeAccounts.length} Challenge</span>
+                <span>/ {fundedAccounts.length} Funded</span>
               </p>
             </div>
           </div>
@@ -182,15 +210,16 @@ export default function DashboardOverview({
           {/* Stat 2 */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 relative overflow-hidden">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{passRateLabel}</span>
-              <div className="p-2 rounded-lg bg-bull-alpha text-bull border border-bull-alpha">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{isMm ? 'Passed Rate' : 'Pass Rate'}</span>
+              <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
                 <Award size={16} />
               </div>
             </div>
             <div className="space-y-1">
               <div className="text-2xl font-bold font-mono text-white">{passRate}%</div>
               <p className="text-xs text-slate-400 flex items-center gap-1">
-                <span className="text-bull font-bold">{passedAccounts.length} {language === 'mm' ? 'အောင်မြင်ပြီး' : language === 'th' ? 'บัญชีผ่าน' : 'accounts passed'}</span>
+                <span className="text-amber-400 font-bold">{passedAccounts.length} passed</span>
+                <span>certificates</span>
               </p>
             </div>
           </div>
@@ -198,15 +227,15 @@ export default function DashboardOverview({
           {/* Stat 3 */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 relative overflow-hidden">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{winRateLabel}</span>
-              <div className="p-2 rounded-lg bg-yellow-500/10 text-yellow-400 border border-yellow-500/10">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{isMm ? 'Win Rate' : 'Win Rate'}</span>
+              <div className="p-2 rounded-lg bg-teal-500/10 text-teal-400 border border-teal-500/20">
                 <Flame size={16} />
               </div>
             </div>
             <div className="space-y-1">
               <div className="text-2xl font-bold font-mono text-white">{winRate}%</div>
               <p className="text-xs text-slate-400 flex items-center gap-1">
-                <span className="text-yellow-400 font-bold">{profitableTradesCount} wins</span>
+                <span className="text-teal-400 font-bold">{profitableTradesCount} wins</span>
                 <span>of {totalTradesCount} trades</span>
               </p>
             </div>
@@ -215,8 +244,8 @@ export default function DashboardOverview({
           {/* Stat 4 */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 relative overflow-hidden">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{totalPayoutsLabel}</span>
-              <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/10">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{isMm ? 'ထုတ်ယူငွေ' : 'Total Payouts'}</span>
+              <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
                 <Receipt size={16} />
               </div>
             </div>
@@ -225,8 +254,8 @@ export default function DashboardOverview({
                 ${totalPayoutsSum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <p className="text-xs text-slate-400 flex items-center gap-1">
-                <span className="text-purple-400 font-bold">{payouts.length} transactions</span>
-                <span>paid</span>
+                <span className="text-purple-400 font-bold">{payouts.length} payouts</span>
+                <span>disbursed</span>
               </p>
             </div>
           </div>
@@ -241,12 +270,12 @@ export default function DashboardOverview({
             <div className="flex items-center justify-between mb-4">
               <div className="space-y-0.5">
                 <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-1.5">
-                  <TrendingUp size={16} className="text-bull" />
+                  <TrendingUp size={16} className="text-emerald-400" />
                   {t.cumulativePnl}
                 </h3>
                 <p className="text-slate-400 text-xs">{t.cumulativePnlSub}</p>
               </div>
-              <div className={`px-2.5 py-1 text-xs font-bold rounded-full border ${netPnLTotal >= 0 ? 'bg-bull-alpha text-bull border-bull-alpha' : 'bg-bear-alpha text-bear border-bear-alpha'}`}>
+              <div className={`px-2.5 py-1 text-xs font-bold rounded-full border ${netPnLTotal >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
                 {netPnLTotal >= 0 ? '+' : ''}${netPnLTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </div>
             </div>
@@ -281,16 +310,16 @@ export default function DashboardOverview({
             </div>
           </div>
 
-          {/* Status Distribution and Alerts */}
+          {/* Status Distribution */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
             <div className="space-y-0.5 mb-4">
-              <h3 className="text-sm font-semibold text-slate-200">{labelFunnel}</h3>
-              <p className="text-slate-400 text-xs">{labelFunnelSub}</p>
+              <h3 className="text-sm font-semibold text-slate-200">{isMm ? 'အကောင့်အမျိုးအစား ဖြန့်ကျက်မှု' : 'Account Status Lifecycle'}</h3>
+              <p className="text-slate-400 text-xs">{isMm ? 'Challenge, Passed, Funded နှင့် Fail ခွဲခြားမှု' : 'Challenge vs Passed vs Funded vs Failed'}</p>
             </div>
 
             <div className="h-44 w-full flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={statusData} barSize={36}>
+                <BarChart data={statusData} barSize={28}>
                   <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
                   <YAxis stroke="#64748b" fontSize={10} tickLine={false} allowDecimals={false} />
                   <Tooltip
@@ -307,150 +336,138 @@ export default function DashboardOverview({
               </ResponsiveContainer>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400 font-bold">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 bg-cyan-500 rounded-full" />
-                <span>{t.activeEvaluations} ({activeAccounts.length})</span>
-              </div>
-              <div className="flex items-center gap-1.5 font-sans">
-                <div className="w-2.5 h-2.5 rounded-full bg-bull" />
-                <span>{t.passedEvaluations} ({passedAccounts.length})</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-bear" />
-                <span>{t.failedEvaluations} ({failedAccounts.length})</span>
-              </div>
+            <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-400 font-bold">
+              <span>Challenge: {challengeAccounts.length}</span>
+              <span className="text-amber-400">Passed: {passedAccounts.length}</span>
+              <span className="text-emerald-400">Funded: {fundedAccounts.length}</span>
+              <span className="text-rose-400">Failed: {failedAccounts.length}</span>
             </div>
           </div>
         </div>
       </ScrollReveal>
 
-      {/* Critical Risk Violations Alerts & Recent Trade Logs */}
-      <ScrollReveal delay={0.3}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Risk violations list */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                  <ShieldAlert size={16} className="text-bear animate-pulse" />
-                  {labelViolations}
-                </h3>
-                <p className="text-slate-400 text-xs">{labelViolationsSub}</p>
-              </div>
-              <span className="px-2 py-0.5 text-[10px] font-mono rounded bg-bear-alpha text-bear border border-bear-alpha font-bold">
-                Live Inspector
-              </span>
+      {/* Account Lifecycle Management Table & AI Detail Inspector */}
+      <ScrollReveal delay={0.25}>
+        <div className="rounded-2xl bg-slate-900 border border-slate-800 p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+            <div>
+              <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2">
+                <Users className="h-4 w-4 text-emerald-400" />
+                <span>{isMm ? 'Prop Firm Account စာရင်း နှင့် AI Detail Analysis' : 'Prop Firm Student Accounts & AI Inspector'}</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {isMm ? 'သီးသန့် အကောင့်တစ်ခုချင်းစီကို Gemini AI ဖြင့် သုံးသပ်နိုင်ပါသည်' : 'Inspect individual accounts, view drawdown status, or run Gemini AI analysis.'}
+              </p>
             </div>
 
-            <hr className="border-slate-800/80" />
-
-            <div className="space-y-3 max-h-[220px] overflow-auto">
-              {failedAccounts.length === 0 ? (
-                <div className="py-8 text-center text-slate-500 text-xs font-semibold">
-                  {language === 'mm' 
-                    ? 'ချိုးဖောက်ထားသော စည်းမျဉ်းမရှိပါ၊ အကောင့်အားလုံး ပုံမှန်အလုပ်လုပ်နေပါသည်။' 
-                    : language === 'th' 
-                      ? 'ไม่มีการละเมิดกฎใดๆ บัญชีทั้งหมดอยู่ในสถานะปกติ' 
-                      : 'No risk rule violations reported. All accounts are within parameters!'}
-                </div>
-              ) : (
-                failedAccounts.map((acc) => {
-                  const rule = rulesMap.get(acc.rule_id);
-                  const drawdownAmount = acc.highest_balance - acc.current_balance;
-                  const dailyLossBreached = acc.initial_balance - acc.current_balance >= (rule?.daily_loss_limit ?? 1000);
-
-                  return (
-                    <div key={acc.id} className="p-3 bg-bear-alpha border border-bear-alpha rounded-xl flex items-start gap-3">
-                      <div className="p-2 rounded-lg bg-bear-alpha text-bear mt-0.5">
-                        <ShieldAlert size={14} />
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-200 font-mono">{acc.account_number}</span>
-                          <span className="text-[10px] font-bold text-bear bg-bear-alpha px-2 py-0.5 rounded-full border border-bear-alpha font-mono uppercase">
-                            {acc.status.replace(/_/g, ' ')}
-                          </span>
-                        </div>
-                        <p className="text-slate-400 text-xs leading-relaxed font-medium">
-                          Account size of <strong className="text-slate-300 font-mono">${rule?.account_size.toLocaleString()}</strong> breached core safety parameters. 
-                          {dailyLossBreached 
-                            ? ` Daily Loss exceeded rule threshold of $${rule?.daily_loss_limit}.`
-                            : ` Drawdown threshold of $${rule?.max_trailing_drawdown} exceeded (Current: $${drawdownAmount.toLocaleString()}).`
-                          }
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-1 rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs font-semibold">
+              {['ALL', 'CHALLENGE', 'PASSED', 'FUNDED', 'FAILED'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setStatusFilter(tab)}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${statusFilter === tab ? 'bg-emerald-500 text-slate-950 font-extrabold shadow' : 'text-slate-400 hover:text-slate-200'}`}
+                >
+                  {tab}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Recent Trades Panel */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <h3 className="text-sm font-semibold text-slate-200">{t.recentTrades}</h3>
-                <p className="text-slate-400 text-xs">{t.recentTradesSub}</p>
-              </div>
-              <button 
-                onClick={onNavigateToTrades}
-                className="text-xs text-bull font-bold hover:opacity-80 transition-all flex items-center gap-1 cursor-pointer"
-              >
-                <span>{language === 'mm' ? 'အရောင်းအဝယ် စမ်းသပ်ခန်းသို့ သွားပါ' : language === 'th' ? 'เปิดโต๊ะเทรด' : 'View Desk'}</span>
-                <ArrowUpRight size={13} strokeWidth={2.5} />
-              </button>
-            </div>
-
-            <hr className="border-slate-800/80" />
-
-            <div className="space-y-2.5 max-h-[220px] overflow-auto">
-              {trades.length === 0 ? (
-                <div className="py-8 text-center text-slate-500 text-xs">
-                  No simulated trades logged yet. Go to the Trading Desk to place simulated futures trades!
-                </div>
-              ) : (
-                [...trades]
-                  .sort((a, b) => new Date(b.trade_time).getTime() - new Date(a.trade_time).getTime())
-                  .slice(0, 4)
-                  .map((t) => {
-                    const account = accounts.find(a => a.id === t.account_id);
-                    const isGain = t.net_pnl >= 0;
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-950 text-slate-400 border-b border-slate-800 font-mono text-[11px]">
+                <tr>
+                  <th className="p-3">Account No</th>
+                  <th className="p-3">Prop Firm</th>
+                  <th className="p-3">Size</th>
+                  <th className="p-3">Status</th>
+                  <th className="p-3 text-right">Current Balance</th>
+                  <th className="p-3 text-right">Target / Buffer</th>
+                  <th className="p-3 text-center">Editable State</th>
+                  <th className="p-3 text-right">AI Analysis</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/80 font-mono text-slate-300">
+                {filteredAccountsList.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="p-8 text-center text-slate-500 font-sans text-xs">
+                      {isMm ? 'ဤအခြေအနေတွင် ရှိသော အကောင့်မရှိသေးပါ' : 'No accounts match the selected status filter.'}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredAccountsList.map((acc) => {
+                    const rule = rulesMap.get(acc.rule_id);
+                    const firmName = rule ? firmsMap.get(rule.prop_firm_id) : 'Prop Firm';
+                    const isFailed = acc.status.startsWith('Failed_at');
 
                     return (
-                      <div key={t.id} className="p-2.5 hover:bg-slate-800/40 rounded-xl flex items-center justify-between transition-colors text-xs border border-slate-800/30">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-1.5 rounded-lg ${isGain ? 'bg-bull-alpha text-bull' : 'bg-bear-alpha text-bear'}`}>
-                            {isGain ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                          </div>
-                          <div className="space-y-0.5">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-slate-200 font-mono">{t.instrument}</span>
-                              <span className={`px-1 rounded text-[9px] font-bold ${t.action === 'BUY' ? 'bg-bull-alpha text-bull' : 'bg-amber-500/10 text-amber-400'}`}>
-                                {t.action}
-                              </span>
-                            </div>
-                            <span className="text-[10px] text-slate-500 font-mono">{account?.account_number ?? 'Unknown'}</span>
-                          </div>
-                        </div>
-
-                        <div className="text-right space-y-0.5">
-                          <span className={`font-mono font-bold ${isGain ? 'text-bull' : 'text-bear'}`}>
-                            {isGain ? '+' : ''}${t.net_pnl.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      <tr key={acc.id} className="hover:bg-slate-800/40 transition-colors">
+                        <td className="p-3 font-bold text-slate-200">{acc.account_number}</td>
+                        <td className="p-3 text-slate-400">{firmName || 'Futures Firm'}</td>
+                        <td className="p-3 text-slate-300">${rule?.account_size ? rule.account_size.toLocaleString() : '50,000'}</td>
+                        <td className="p-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            acc.status === 'Passed' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                            acc.status === 'Funded' || acc.status === 'Payout_Active' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                            isFailed ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
+                            'bg-sky-500/10 text-sky-400 border border-sky-500/20'
+                          }`}>
+                            {acc.status}
                           </span>
-                          <div className="text-[9px] text-slate-500 font-mono">
-                            {t.contracts_traded} Ctr · Comm: ${(t.contracts_traded * 3.0).toFixed(2)}
-                          </div>
-                        </div>
-                      </div>
+                        </td>
+                        <td className="p-3 text-right font-bold text-slate-100">
+                          ${acc.current_balance.toLocaleString()}
+                        </td>
+                        <td className="p-3 text-right text-slate-400">
+                          {rule?.profit_target ? `$${rule.profit_target.toLocaleString()}` : '$3,000'}
+                        </td>
+                        <td className="p-3 text-center">
+                          {!acc.is_editable || isFailed ? (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-slate-800 px-2 py-0.5 text-[10px] text-slate-400 font-sans border border-slate-700">
+                              <Lock className="h-3 w-3 text-rose-400" />
+                              <span>ReadOnly</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-400 font-sans border border-emerald-500/20">
+                              <CheckCircle2 className="h-3 w-3" />
+                              <span>Active</span>
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3 text-right">
+                          <button
+                            onClick={() => setSelectedAiAccount(acc)}
+                            className="inline-flex items-center gap-1 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-3 py-1.5 text-[11px] font-bold text-white transition-all shadow active:scale-95 font-sans"
+                          >
+                            <Bot className="h-3.5 w-3.5" />
+                            <span>{isMm ? 'AI သုံးသပ်ရန်' : 'Run AI Analysis'}</span>
+                          </button>
+                        </td>
+                      </tr>
                     );
                   })
-              )}
-            </div>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </ScrollReveal>
+
+      {/* AI Analysis Modal Popup */}
+      {selectedAiAccount && (
+        <AiAnalysisModal
+          isOpen={!!selectedAiAccount}
+          onClose={() => setSelectedAiAccount(null)}
+          account={selectedAiAccount}
+          rule={rulesMap.get(selectedAiAccount.rule_id)}
+          firmName={rulesMap.get(selectedAiAccount.rule_id) ? firmsMap.get(rulesMap.get(selectedAiAccount.rule_id)!.prop_firm_id) : 'Prop Firm'}
+          trades={trades.filter(t => t.account_id === selectedAiAccount.id)}
+          language={language}
+        />
+      )}
+
     </div>
   );
 }
+

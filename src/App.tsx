@@ -7,6 +7,7 @@ import PropFirmsPanel from './components/PropFirmsPanel';
 import AccountsPanel from './components/AccountsPanel';
 import TradingDeskPanel from './components/TradingDeskPanel';
 import PayoutsPanel from './components/PayoutsPanel';
+import AdminDashboard from './components/AdminDashboard';
 import { supabase } from './lib/supabase';
 import { translations, Language } from './lib/translations';
 import Login from './components/Login';
@@ -101,6 +102,10 @@ export default function App() {
         setAuthView('reset-password');
       } else {
         setAuthView('login');
+      }
+
+      if (path === '/admin/dashboard' || hash.includes('/admin/dashboard')) {
+        setCurrentTab('admin-dashboard');
       }
     };
 
@@ -218,6 +223,44 @@ export default function App() {
     syncState('prop_firm_rules', updated);
   };
 
+  const handleUpdateFirm = (id: string, name: string, logoUrl?: string) => {
+    const updated = firms.map(f => {
+      if (f.id === id) {
+        return { ...f, name, logo_url: logoUrl };
+      }
+      return f;
+    });
+    setFirms(updated);
+    syncState('prop_firms', updated);
+  };
+
+  const handleUpdateRule = (id: string, ruleData: Omit<PropFirmRule, 'id'>) => {
+    const updated = rules.map(r => {
+      if (r.id === id) {
+        return { ...r, ...ruleData };
+      }
+      return r;
+    });
+    setRules(updated);
+    syncState('prop_firm_rules', updated);
+  };
+
+  const handleAddAccountSimulated = (email: string) => {
+    const defaultRuleId = rules.length > 0 ? rules[0].id : 'rule-1';
+    const accountSize = rules.length > 0 ? rules[0].account_size : 50000;
+    
+    const newAcc: Omit<StudentAccount, 'id' | 'highest_balance'> = {
+      profile_id: 'sim-student-id',
+      rule_id: defaultRuleId,
+      account_number: `CORE-${Math.floor(100000 + Math.random() * 900000)}`,
+      current_balance: accountSize,
+      initial_balance: accountSize,
+      status: 'Active',
+      is_editable: true
+    };
+    handleAddAccount(newAcc);
+  };
+
   const handleAddAccount = (acc: Omit<StudentAccount, 'id' | 'highest_balance'>) => {
     const newAcc: StudentAccount = {
       ...acc,
@@ -324,6 +367,22 @@ export default function App() {
             theme={currentTheme}
           />
         );
+      case 'admin-dashboard':
+        return (
+          <AdminDashboard
+            firms={firms}
+            rules={rules}
+            accounts={accounts}
+            language={language}
+            onAddFirm={handleAddFirm}
+            onUpdateFirm={handleUpdateFirm}
+            onDeleteFirm={handleDeleteFirm}
+            onAddRule={handleAddRule}
+            onUpdateRule={handleUpdateRule}
+            onDeleteRule={handleDeleteRule}
+            onAddAccountSimulated={handleAddAccountSimulated}
+          />
+        );
       case 'sql':
         return <SQLPanel t={t} language={language} />;
       case 'firms':
@@ -428,6 +487,7 @@ export default function App() {
 
   const mobileMenuItems = [
     { id: 'overview', name: t.navOverview },
+    ...(currentRole === 'admin' ? [{ id: 'admin-dashboard', name: t.navAdminDashboard }] : []),
     { id: 'sql', name: t.navSqlSandbox },
     { id: 'firms', name: t.navPropFirms },
     { id: 'accounts', name: t.navAccounts },

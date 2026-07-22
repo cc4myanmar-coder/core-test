@@ -259,14 +259,16 @@ export default function Login({
               </div>
             </motion.div>
 
-            {/* Password Field with staggered lift, custom rainbow border, eye toggle (Reset Test link removed) */}
+            {/* Password Field with staggered lift, custom rainbow border, eye toggle */}
             <motion.div 
               initial={{ opacity: 0, x: -15 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.45 }}
               className="space-y-2"
             >
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">{t.passwordLabel}</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block">{t.passwordLabel}</label>
+              </div>
               
               <div className={`rainbow-input-wrapper ${passwordFocused ? 'focused' : ''}`}>
                 <div className="input-content-inner flex items-center relative">
@@ -297,26 +299,39 @@ export default function Login({
             </motion.div>
           </div>
 
-          {/* Action Button - Fully Interactive 3D Entry Door Icon replacement (No text as requested) */}
+          {/* Action Button */}
           <motion.button
             type="submit"
             disabled={loading}
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
-            className="w-full py-3.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 text-slate-950 font-black rounded-xl text-xs tracking-widest transition-all uppercase flex items-center justify-center shadow-[0_12px_24px_rgba(6,182,212,0.25)] hover:shadow-[0_16px_32px_rgba(6,182,212,0.45)] cursor-pointer"
+            className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-50 text-slate-950 font-black rounded-xl text-xs tracking-widest transition-all uppercase flex items-center justify-center shadow-[0_12px_24px_rgba(16,185,129,0.25)] hover:shadow-[0_16px_32px_rgba(16,185,129,0.45)] cursor-pointer"
           >
             {loading ? (
               <span className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
             ) : (
               <motion.div 
-                className="flex items-center justify-center"
-                whileHover={{ scale: 1.2, rotate: 5 }}
-                transition={{ type: "spring", stiffness: 350, damping: 12 }}
+                className="flex items-center justify-center gap-2"
+                whileHover={{ scale: 1.05 }}
               >
-                <LogIn size={22} strokeWidth={3} className="text-slate-950" />
+                <LogIn size={18} strokeWidth={2.5} className="text-slate-950" />
+                <span className="font-extrabold">{language === 'mm' ? 'အကောင့်သို့ ဝင်မည်' : 'SIGN IN TO DASHBOARD'}</span>
               </motion.div>
             )}
           </motion.button>
+
+          {/* Admin Auth Notice for Students */}
+          <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 space-y-1">
+            <div className="flex items-center gap-1.5 text-amber-400 font-semibold">
+              <Info size={13} className="flex-shrink-0" />
+              <span>{language === 'mm' ? 'သတိပေးချက်:' : 'Notice:'}</span>
+            </div>
+            <p className="leading-relaxed">
+              {language === 'mm'
+                ? 'ကျောင်းသားများ မိမိဘာသာ Signup လုပ်ခွင့်မရှိပါ။ Admin မှ အကောင့်ပြုလုပ်ပေးပြီး Invitation/Reset Link ပေးပို့ပါမည်။ စကားဝှက်မေ့ပါက Admin ထံ အကူအညီတောင်းပါ။'
+                : 'Self-registration is disabled. Only Admin can provision student accounts and send password setup links. Contact Admin if you need access or reset.'}
+            </p>
+          </div>
         </form>
 
         {/* Configuration Notice (Demo State Indicator) */}
