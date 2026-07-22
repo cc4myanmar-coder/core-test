@@ -503,10 +503,10 @@ export default function App() {
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-slate-950 rounded-lg flex items-center justify-center border border-slate-800 p-1.5 overflow-hidden">
             <img 
-              src="https://ccsgfqstofavjjxjuxkk.supabase.co/storage/v1/object/public/assets/Core.png" 
+              src="https://ccsgfqstofavjjxjuxkk.supabase.co/storage/v1/object/public/assets/core.jpg" 
               alt="CORE logo"
               referrerPolicy="no-referrer"
-              className="w-full h-full object-contain"
+              className="w-full h-full object-cover rounded-full"
             />
           </div>
           <div>

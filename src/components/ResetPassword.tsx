@@ -113,10 +113,10 @@ export default function ResetPassword({ onNavigateToLogin, language, onLanguageC
               <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-b-2 border-r-2 border-cyan-400 rounded-br" />
               
               <img 
-                src="https://ccsgfqstofavjjxjuxkk.supabase.co/storage/v1/object/public/assets/Core.png" 
+                src="https://ccsgfqstofavjjxjuxkk.supabase.co/storage/v1/object/public/assets/core.jpg" 
                 alt="CORE logo"
                 referrerPolicy="no-referrer"
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover rounded-xl"
               />
             </div>
             
