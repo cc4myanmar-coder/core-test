@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { Key, Mail, AlertTriangle, Info, Globe, Eye, EyeOff, LogIn, Sun, Moon } from 'lucide-react';
+import { Key, Mail, AlertTriangle, Info, Globe, Eye, EyeOff, LogIn, Sun, Moon, Video } from 'lucide-react';
 import { Language, translations } from '../lib/translations';
 import { motion } from 'motion/react';
 
@@ -11,6 +11,7 @@ interface LoginProps {
   onLanguageChange: (lang: Language) => void;
   isLightMode: boolean;
   onToggleLightMode: () => void;
+  onShowVideoIntro?: () => void;
 }
 
 export default function Login({ 
@@ -19,7 +20,8 @@ export default function Login({
   language, 
   onLanguageChange,
   isLightMode,
-  onToggleLightMode
+  onToggleLightMode,
+  onShowVideoIntro
 }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -321,10 +323,22 @@ export default function Login({
           </motion.button>
 
           {/* Admin Auth Notice for Students */}
-          <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 space-y-1">
-            <div className="flex items-center gap-1.5 text-amber-400 font-semibold">
-              <Info size={13} className="flex-shrink-0" />
-              <span>{language === 'mm' ? 'သတိပေးချက်:' : 'Notice:'}</span>
+          <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-amber-400 font-semibold">
+                <Info size={13} className="flex-shrink-0" />
+                <span>{language === 'mm' ? 'သတိပေးချက်:' : 'Notice:'}</span>
+              </div>
+              {onShowVideoIntro && (
+                <button
+                  type="button"
+                  onClick={onShowVideoIntro}
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 cursor-pointer"
+                >
+                  <Video size={11} />
+                  <span>{language === 'mm' ? 'ဗီဒီယို မိတ်ဆက် ပြန်ကြည့်ရန်' : 'Watch Intro Video'}</span>
+                </button>
+              )}
             </div>
             <p className="leading-relaxed">
               {language === 'mm'

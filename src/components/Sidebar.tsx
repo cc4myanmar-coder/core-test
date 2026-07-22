@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Database, LayoutDashboard, Briefcase, 
-  Users, TrendingUp, Coins, User, LogOut, Globe, Sun, Moon, Shield
+  Users, TrendingUp, Coins, User, LogOut, Globe, Sun, Moon, Shield, Video
 } from 'lucide-react';
 import { Profile } from '../types';
 import { Language, translations } from '../lib/translations';
@@ -21,6 +21,7 @@ interface SidebarProps {
   onColorThemeChange: (id: string) => void;
   isLightMode: boolean;
   onToggleLightMode: () => void;
+  onShowVideoIntro?: () => void;
 }
 
 export default function Sidebar({
@@ -36,7 +37,8 @@ export default function Sidebar({
   colorThemeId,
   onColorThemeChange,
   isLightMode,
-  onToggleLightMode
+  onToggleLightMode,
+  onShowVideoIntro
 }: SidebarProps) {
   
   const t = translations[language];
@@ -170,6 +172,23 @@ export default function Sidebar({
               </span>
             </button>
           </div>
+
+          {/* Intro Video Replay Button */}
+          {onShowVideoIntro && (
+            <button
+              type="button"
+              onClick={onShowVideoIntro}
+              className="w-full flex items-center justify-between bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/20 rounded-lg px-3 py-2 text-xs font-bold text-emerald-400 transition-all cursor-pointer select-none"
+            >
+              <div className="flex items-center gap-2">
+                <Video size={13} className="text-emerald-400 animate-pulse" />
+                <span>{language === 'mm' ? 'ဗီဒီယို မိတ်ဆက် ပြန်ကြည့်ရန်' : 'Watch Video Intro'}</span>
+              </div>
+              <span className="text-[8px] bg-emerald-950 px-1.5 py-0.5 rounded text-emerald-300 uppercase tracking-widest font-mono font-bold">
+                Play
+              </span>
+            </button>
+          )}
         </div>
 
         <hr className="border-slate-800/80" />

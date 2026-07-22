@@ -57,7 +57,7 @@ export const VideoIntroModal: React.FC<VideoIntroModalProps> = ({ isOpen, onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-xl transition-all duration-500 p-4">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/90 backdrop-blur-xl transition-all duration-500 p-4">
       <div className="relative w-full max-w-5xl overflow-hidden rounded-2xl border border-emerald-500/30 bg-slate-900 shadow-2xl shadow-emerald-500/10">
         
         {/* Header Bar */}

@@ -12,6 +12,7 @@ import { supabase } from './lib/supabase';
 import { translations, Language } from './lib/translations';
 import Login from './components/Login';
 import ResetPassword from './components/ResetPassword';
+import VideoIntroModal from './components/VideoIntroModal';
 import { 
   mockProfiles, 
   mockPropFirms, 
@@ -26,6 +27,9 @@ import { COLOR_THEMES } from './lib/themes';
 export default function App() {
   // Mobile navigation state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Video intro modal auto-show on initial site entry
+  const [showVideoIntro, setShowVideoIntro] = useState<boolean>(true);
 
   // Core application states
   const [currentTab, setCurrentTab] = useState('overview');
@@ -447,6 +451,11 @@ export default function App() {
   if (isAuthLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
+        <VideoIntroModal 
+          isOpen={showVideoIntro} 
+          onClose={() => setShowVideoIntro(false)} 
+          language={language} 
+        />
         <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
         <span className="text-slate-400 text-xs font-semibold mt-4 tracking-wider uppercase animate-pulse">
           {language === 'en' ? 'Please wait...' : language === 'th' ? 'กรุณารอสักครู่...' : 'ခဏစောင့်ဆိုင်းပေးပါ...'}
@@ -458,30 +467,45 @@ export default function App() {
   if (!session) {
     if (authView === 'reset-password') {
       return (
-        <ResetPassword 
-          language={language}
-          onLanguageChange={changeLanguage}
-          onNavigateToLogin={() => {
-            window.location.hash = '/login';
-            setAuthView('login');
-          }} 
-        />
+        <>
+          <VideoIntroModal 
+            isOpen={showVideoIntro} 
+            onClose={() => setShowVideoIntro(false)} 
+            language={language} 
+          />
+          <ResetPassword 
+            language={language}
+            onLanguageChange={changeLanguage}
+            onNavigateToLogin={() => {
+              window.location.hash = '/login';
+              setAuthView('login');
+            }} 
+          />
+        </>
       );
     }
     return (
-      <Login 
-        language={language}
-        onLanguageChange={changeLanguage}
-        onLoginSuccess={(newSession) => {
-          setSession(newSession);
-        }} 
-        onNavigateToReset={() => {
-          window.location.hash = '/auth/reset-password';
-          setAuthView('reset-password');
-        }}
-        isLightMode={isLightMode}
-        onToggleLightMode={() => setIsLightMode(!isLightMode)}
-      />
+      <>
+        <VideoIntroModal 
+          isOpen={showVideoIntro} 
+          onClose={() => setShowVideoIntro(false)} 
+          language={language} 
+        />
+        <Login 
+          language={language}
+          onLanguageChange={changeLanguage}
+          onLoginSuccess={(newSession) => {
+            setSession(newSession);
+          }} 
+          onNavigateToReset={() => {
+            window.location.hash = '/auth/reset-password';
+            setAuthView('reset-password');
+          }}
+          isLightMode={isLightMode}
+          onToggleLightMode={() => setIsLightMode(!isLightMode)}
+          onShowVideoIntro={() => setShowVideoIntro(true)}
+        />
+      </>
     );
   }
 
@@ -498,6 +522,13 @@ export default function App() {
   return (
     <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-slate-950 flex flex-col lg:flex-row font-sans text-slate-300 antialiased selection:bg-emerald-500 selection:text-slate-950" id="main-root">
       
+      {/* Intro Video Modal - Always pops up on site entrance */}
+      <VideoIntroModal 
+        isOpen={showVideoIntro} 
+        onClose={() => setShowVideoIntro(false)} 
+        language={language} 
+      />
+
       {/* Mobile Top Navigation bar */}
       <header className="lg:hidden bg-slate-900 border-b border-slate-800 px-5 py-4 flex items-center justify-between sticky top-0 z-40 select-none">
         <div className="flex items-center gap-2">
@@ -636,6 +667,7 @@ export default function App() {
           onColorThemeChange={changeTheme}
           isLightMode={isLightMode}
           onToggleLightMode={() => setIsLightMode(!isLightMode)}
+          onShowVideoIntro={() => setShowVideoIntro(true)}
         />
       </div>
 
