@@ -57,9 +57,10 @@ export default function Sidebar({
   const currentProfile = profiles.find(p => p.role === currentRole);
 
   return (
-    <aside className="w-full lg:w-72 bg-slate-900 border-r border-slate-800 flex flex-col justify-between p-5 min-h-screen" id="split-sidebar">
+    <aside className="w-full lg:w-72 lg:h-screen lg:max-h-screen lg:sticky lg:top-0 bg-slate-900 border-r border-slate-800 flex flex-col justify-between p-4 lg:p-5 overflow-y-auto shrink-0 custom-scrollbar z-30" id="split-sidebar">
       {/* Brand Header */}
-      <div className="space-y-6">
+      <div className="space-y-5">
+
         <div className="flex items-center gap-3">
           {/* Seamless logo wrapper with active slow-spin border and pulse */}
           <div className="w-11 h-11 bg-slate-950 border border-slate-800 rounded-full flex items-center justify-center relative p-1 overflow-hidden shadow-lg shadow-cyan-500/5">

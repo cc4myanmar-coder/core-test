@@ -14,8 +14,6 @@ export const VideoIntroModal: React.FC<VideoIntroModalProps> = ({ isOpen, onClos
   const [progress, setProgress] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const t = translations[language] || translations.en;
-
   useEffect(() => {
     if (isOpen && videoRef.current) {
       videoRef.current.play().catch(() => {
@@ -57,109 +55,103 @@ export const VideoIntroModal: React.FC<VideoIntroModalProps> = ({ isOpen, onClos
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/90 backdrop-blur-xl transition-all duration-500 p-4">
-      <div className="relative w-full max-w-5xl overflow-hidden rounded-2xl border border-emerald-500/30 bg-slate-900 shadow-2xl shadow-emerald-500/10">
-        
-        {/* Header Bar */}
-        <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/80 px-6 py-3.5 backdrop-blur-md">
-          <div className="flex items-center gap-3">
+    <div className="fixed inset-0 z-[9999] w-screen h-screen bg-slate-950 flex flex-col justify-between overflow-hidden animate-fade-in">
+      {/* Full screen background video - seamlessly fills 100% viewport */}
+      <div className="absolute inset-0 z-0 w-full h-full bg-black flex items-center justify-center">
+        <video
+          ref={videoRef}
+          src="https://ccsgfqstofavjjxjuxkk.supabase.co/storage/v1/object/public/assets/Videos/CORE%20Intro.mp4"
+          className="w-full h-full object-cover"
+          onTimeUpdate={handleTimeUpdate}
+          onEnded={onClose}
+          playsInline
+          autoPlay
+        />
+        {/* Subtle top/bottom dark gradient vignette for contrast */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-transparent to-slate-950/90 pointer-events-none" />
+      </div>
+
+      {/* Top Floating Header Overlay */}
+      <div className="relative z-10 flex items-center justify-between p-6 md:px-10 md:py-6 bg-gradient-to-b from-slate-950/90 via-slate-950/40 to-transparent backdrop-blur-sm">
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-full bg-slate-950 border border-emerald-500/40 p-0.5 overflow-hidden shadow-lg shadow-emerald-500/20">
             <img 
               src="https://ccsgfqstofavjjxjuxkk.supabase.co/storage/v1/object/public/assets/core.jpg" 
               alt="CORE Logo" 
-              className="h-8 w-8 rounded-lg object-cover ring-2 ring-emerald-500/40"
+              className="w-full h-full object-cover rounded-full"
             />
-            <div>
-              <h3 className="font-bold text-slate-100 text-sm tracking-wide flex items-center gap-1.5">
-                CORE Mentorship Program
-                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400 border border-emerald-500/20">
-                  Intro
-                </span>
-              </h3>
-              <p className="text-xs text-slate-400">Futures Prop Firm Account Management System</p>
-            </div>
           </div>
-
-          <button
-            onClick={onClose}
-            className="flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-xs font-semibold text-white transition-all shadow-lg shadow-emerald-600/20 hover:scale-105 active:scale-95"
-          >
-            <span>{language === 'mm' ? 'စနစ်သို့ ဝင်ရောက်မည်' : 'Enter Platform'}</span>
-            <SkipForward className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Video Player Box */}
-        <div className="relative aspect-video w-full bg-black flex items-center justify-center group overflow-hidden">
-          <video
-            ref={videoRef}
-            src="https://ccsgfqstofavjjxjuxkk.supabase.co/storage/v1/object/public/assets/Videos/CORE%20Intro.mp4"
-            className="h-full w-full object-contain"
-            onTimeUpdate={handleTimeUpdate}
-            onEnded={onClose}
-            playsInline
-          />
-
-          {/* Video Overlay Controls on Hover */}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-6">
-            <div className="flex justify-end">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900/80 px-3 py-1 text-xs text-slate-300 border border-slate-700/50 backdrop-blur-md">
-                <Sparkles className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
-                NQ / MNQ / ES Futures Engine
+          <div>
+            <h3 className="font-extrabold text-white text-base tracking-wide flex items-center gap-2">
+              CORE Mentorship
+              <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold text-emerald-300 border border-emerald-500/30 font-mono">
+                Futures Prop Firm
               </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={togglePlay}
-                  className="rounded-full bg-emerald-500 p-3 text-slate-950 hover:bg-emerald-400 transition-all shadow-lg hover:scale-110 active:scale-95"
-                  title={isPlaying ? "Pause" : "Play"}
-                >
-                  {isPlaying ? <Pause className="h-5 w-5 fill-slate-950" /> : <Play className="h-5 w-5 fill-slate-950 ml-0.5" />}
-                </button>
-
-                <button
-                  onClick={toggleMute}
-                  className="rounded-full bg-slate-800/80 p-3 text-slate-200 hover:bg-slate-700 transition-all backdrop-blur-md"
-                  title={isMuted ? "Unmute" : "Mute"}
-                >
-                  {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                <span className="text-xs font-mono text-emerald-300 font-semibold">CORE SECURE MANAGEMENT</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-slate-800">
-            <div 
-              className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-150"
-              style={{ width: `${progress}%` }}
-            />
+            </h3>
+            <p className="text-xs text-slate-300 font-mono">NQ / MNQ / ES Trading Evaluation Platform</p>
           </div>
         </div>
 
-        {/* Footer info bar */}
-        <div className="flex items-center justify-between border-t border-slate-800 bg-slate-900/90 px-6 py-3 text-xs text-slate-400">
-          <p className="flex items-center gap-2">
-            <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-            {language === 'mm' ? 'CORE Mentorship - ပရော်ဖက်ရှင်နယ် Futures Trading သင်တန်း' : 'CORE Mentorship Program — Professional Futures Prop Firm System'}
-          </p>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-emerald-400 transition-colors font-medium flex items-center gap-1"
-          >
-            {language === 'mm' ? 'ကျော်သွားမည် (Skip)' : 'Skip Video'}
-          </button>
+        <button
+          onClick={onClose}
+          className="flex items-center gap-2.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 px-6 py-3 text-xs font-black text-slate-950 transition-all shadow-xl shadow-emerald-500/30 hover:scale-105 active:scale-95 cursor-pointer uppercase tracking-wider"
+        >
+          <span>{language === 'mm' ? 'စနစ်သို့ ဝင်ရောက်မည်' : 'Enter Platform'}</span>
+          <SkipForward className="h-4 w-4 stroke-[3]" />
+        </button>
+      </div>
+
+      {/* Bottom Floating Controls Bar */}
+      <div className="relative z-10 p-6 md:px-10 md:py-6 bg-gradient-to-t from-slate-950/95 via-slate-950/60 to-transparent space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={togglePlay}
+              className="rounded-full bg-emerald-500 p-3.5 text-slate-950 hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/30 hover:scale-110 active:scale-95 cursor-pointer"
+              title={isPlaying ? "Pause" : "Play"}
+            >
+              {isPlaying ? <Pause className="h-5 w-5 fill-slate-950" /> : <Play className="h-5 w-5 fill-slate-950 ml-0.5" />}
+            </button>
+
+            <button
+              onClick={toggleMute}
+              className="rounded-full bg-slate-900/80 p-3.5 text-slate-200 hover:bg-slate-800 transition-all border border-slate-700/60 backdrop-blur-md cursor-pointer"
+              title={isMuted ? "Unmute" : "Mute"}
+            >
+              {isMuted ? <VolumeX className="h-5 w-5 text-amber-400" /> : <Volume2 className="h-5 w-5 text-emerald-400" />}
+            </button>
+
+            <div className="text-xs font-mono text-slate-300 hidden sm:block">
+              {language === 'mm' ? 'CORE Intro Video မိတ်ဆက်' : 'CORE Mentorship Video Presentation'}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-xs font-mono text-emerald-400 font-semibold bg-emerald-950/60 px-3.5 py-1.5 rounded-full border border-emerald-500/30">
+              <ShieldCheck className="h-4 w-4" />
+              <span>CORE Mentorship Futures System</span>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="text-xs font-bold text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-900/80 border border-slate-700/60 hover:bg-slate-800 cursor-pointer"
+            >
+              <span>{language === 'mm' ? 'ကျော်သွားမည် (Skip)' : 'Skip Video'}</span>
+            </button>
+          </div>
         </div>
 
+        {/* Edge-to-edge full width progress bar */}
+        <div className="w-full h-1.5 bg-slate-800/80 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 transition-all duration-150"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
       </div>
     </div>
   );
 };
 
 export default VideoIntroModal;
+
